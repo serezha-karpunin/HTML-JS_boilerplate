@@ -5,6 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   </head>
   <body>
-    <div>Hello, world</div>
+     <div class="header-wrapper">
+      <div class="header">
+        <p>Todo list</p>
+        <input id="search-box-input" placeholder="Search..."/>
+      </div>
+    </div>
+    <div class="content">
+      <div class="create-task-wrapper">
+        <input id="create-task-input" class="task-input" placeholder="New task..."/>
+        <button id="create-task-button">Add</button>
+      </div>
+      <div>
+        <div class="tasks-title-wrapper">
+          <p>Open</p>
+          <select id="open-tasks-selector" class="selector">
+            <option value="creation-date-asc">Date creation (Asc)</option>
+            <option value="creation-date-desc">Date creation (Desc)</option>
+            <option value="text-asc">Text (Asc)</option>
+            <option value="text-desc">Text (Desc)</option>
+          </select>
+        </div>
+        <ul id="open-tasks" class="task-list">
+        </ul>
+        <div class="clear-button-wrapper">
+          <button id="clear-open-tasks-button" class="clear-button">Clear "Open" list</button>
+        </div>
+      </div>
+      <div>
+        <div class="tasks-title-wrapper">
+          <p>Done</p>
+          <select id="done-tasks-selector" class="selector">
+            <option value="due-date-asc">Due date (Asc)</option>
+            <option value="due-date-desc">Due date (Desc)</option>
+            <option  value="text-asc">Text (Asc)</option>
+            <option value="text-desc">Text (Desc)</option>
+          </select>
+        </div>
+        <ul id="done-tasks" class="task-list"></ul>
+        <div class="clear-button-wrapper">
+          <button id="clear-done-tasks-button" class="clear-button">Clear "Done" list</button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
