@@ -1,69 +1,6 @@
 import './style.css';
-
-class Task {
-  constructor(id, text) {
-    this.id = id;
-    this.text = text;
-    this.creationDate = new Date();
-    this.isDone = false;
-    this.dueDate = null;
-  }
-}
-
-class State {
-  constructor() {
-    this.openTasks = [];
-    this.doneTasks = [];
-    this.taskCounter = 0;
-    this.searchQuery = '';
-    this.openTasksSortOption = 'creation-date-asc';
-    this.doneTasksSortOption = 'due-date-asc';
-  }
-
-  addTask(text) {
-    let task = new Task(this.taskCounter++, text);
-    this.openTasks.push(task);
-  }
-
-  doneTask(task) {
-    this.removeTask(task);
-    task.isDone = true;
-    task.dueDate = new Date();
-    this.doneTasks.push(task);
-  }
-
-  undoneTask(task) {
-    this.removeTask(task);
-    task.isDone = false;
-    task.dueDate = null;
-    this.openTasks.push(task);
-  }
-
-  updateTaskName(id, text) {
-    this.openTasks.filter(t => t.id === id).forEach(t => (t.text = text));
-    this.doneTasks.filter(t => t.id === id).forEach(t => (t.text = text));
-  }
-
-  removeTask(task) {
-    if (task.isDone) {
-      this.doneTasks = this.doneTasks.filter(t => t.id !== task.id);
-    } else {
-      this.openTasks = this.openTasks.filter(t => t.id !== task.id);
-    }
-  }
-
-  clearOpenTasks() {
-    this.openTasks = [];
-  }
-
-  clearDoneTasks() {
-    this.doneTasks = [];
-  }
-
-  static fromJSON(json) {
-    return Object.assign(new State(), JSON.parse(json));
-  }
-}
+import { State, saveState, getState } from './state.js';
+import { sortTasks, formatDate } from './util.js';
 
 const refreshTasks = () => {
   let state = getState();
@@ -79,7 +16,7 @@ const refreshTasks = () => {
   openList.innerHTML = '';
   state.openTasks
     .filter(task => task.text.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((t1, t2) => sortOpenTasks(t1, t2))
+    .sort((t1, t2) => sortTasks(t1, t2, state.openTasksSortOption))
     .map(task => createTaskElement(task))
     .forEach(elem => openList.append(elem));
 
@@ -87,50 +24,10 @@ const refreshTasks = () => {
   doneList.innerHTML = '';
   state.doneTasks
     .filter(task => task.text.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((t1, t2) => sortDoneTasks(t1, t2))
+    .sort((t1, t2) => sortTasks(t1, t2, state.doneTasksSortOption))
     .map(task => createTaskElement(task))
     .forEach(elem => doneList.append(elem));
 };
-
-const getState = () => {
-  let stateJson = localStorage.getItem('state');
-  if (stateJson) {
-    return State.fromJSON(stateJson);
-  } else {
-    return new State();
-  }
-};
-
-const sortOpenTasks = (t1, t2) => {
-  let sortOption = document.getElementById('open-tasks-selector').value;
-  switch (sortOption) {
-    case 'creation-date-asc':
-      return compareAsc(t1.creationDate, t2.creationDate);
-    case 'creation-date-desc':
-      return compareDesc(t1.creationDate, t2.creationDate);
-    case 'text-asc':
-      return compareAsc(t1.text, t2.text);
-    case 'text-desc':
-      return compareDesc(t1.text, t2.text);
-  }
-};
-
-const sortDoneTasks = (t1, t2) => {
-  let sortOption = document.getElementById('done-tasks-selector').value;
-  switch (sortOption) {
-    case 'due-date-asc':
-      return compareAsc(t1.dueDate, t2.dueDate);
-    case 'due-date-desc':
-      return compareDesc(t1.dueDate, t2.dueDate);
-    case 'text-asc':
-      return compareAsc(t1.text, t2.text);
-    case 'text-desc':
-      return compareDesc(t1.text, t2.text);
-  }
-};
-
-const compareAsc = (v1, v2) => (v1 > v2 ? 1 : v1 < v2 ? -1 : 0);
-const compareDesc = (v1, v2) => (v1 < v2 ? 1 : v1 > v2 ? -1 : 0);
 
 const createTaskElement = task => {
   let checkbox = document.createElement('input');
@@ -155,6 +52,7 @@ const createTaskElement = task => {
         let state = getState();
         state.updateTaskName(task.id, input.value);
         saveState(state);
+        refreshTasks();
       } else if (event.code === 'Escape') {
         refreshTasks();
       }
@@ -196,17 +94,6 @@ const createTaskElement = task => {
   return li;
 };
 
-const formatDate = date => {
-  date = new Date(date);
-  let hours = date.getHours();
-  let minutes = date.getMinutes();
-  let suffix = hours >= 12 ? 'pm' : 'am';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  minutes = minutes < 10 ? '0' + minutes : minutes;
-  return `${hours}:${minutes} ${suffix}`;
-};
-
 const toggleTask = task => {
   let state = getState();
   if (task.isDone) {
@@ -215,12 +102,14 @@ const toggleTask = task => {
     state.doneTask(task);
   }
   saveState(state);
+  refreshTasks();
 };
 
 const removeTask = task => {
   let state = getState();
   state.removeTask(task);
   saveState(state);
+  refreshTasks();
 };
 
 const updateSearchQuery = event => {
@@ -228,10 +117,6 @@ const updateSearchQuery = event => {
   let state = getState();
   state.searchQuery = searchQuery;
   saveState(state);
-};
-
-const saveState = state => {
-  localStorage.setItem('state', JSON.stringify(state));
   refreshTasks();
 };
 
@@ -242,6 +127,7 @@ const createNewTask = () => {
     document.getElementById('create-task-input').value = '';
     state.addTask(text);
     saveState(state);
+    refreshTasks();
   }
 };
 
@@ -249,12 +135,14 @@ const clearOpenTasks = () => {
   let state = getState();
   state.clearOpenTasks();
   saveState(state);
+  refreshTasks();
 };
 
 const clearDoneTasks = () => {
   let state = getState();
   state.clearDoneTasks();
   saveState(state);
+  refreshTasks();
 };
 
 const handleCreateTaskInput = event => {
@@ -273,6 +161,7 @@ const updateSortOptions = () => {
   ).value;
 
   saveState(state);
+  refreshTasks();
 };
 
 window.onload = refreshTasks;
